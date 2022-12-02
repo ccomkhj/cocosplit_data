@@ -66,7 +66,7 @@ def main(args):
         
         train_path = os.path.join(args.save_path, 'train')
         train_image_path = os.path.join(train_path, 'images')
-        valid_path = os.path.join(args.save_path, 'valid')
+        valid_path = os.path.join(args.save_path, 'val')
         valid_image_path = os.path.join(valid_path, 'images')
         test_path = os.path.join(args.save_path, 'test')
         test_image_path = os.path.join(test_path, 'images')
