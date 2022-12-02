@@ -1,3 +1,4 @@
+import os
 import json
 import argparse
 import funcy
@@ -14,12 +15,17 @@ parser.add_argument('--validJson_name', type=str, default='valild.json', help='W
 parser.add_argument('--testJson_name', type=str, default='test.json', help='Where to store COCO test annotations')
 parser.add_argument('--annotations', dest='annotations', action='store_true',
                     help='Ignore all images without annotations. Keep only these with at least one annotation')
+parser.add_argument('--save_path', type=str, default='.', help='main storing path')
+parser.add_argument('--image_path', type=str, default='.', help='images relative path')
+parser.add_argument('--os', type=str, default='linux', help='choose your operating system')
+parser.add_argument('--no_test', type=bool, default=False, action=argparse.BooleanOptionalAction, help='only split train and validation samples')
 
 args = parser.parse_args()
 
 ratio_train = args.ratio_train
 ratio_valid = args.ratio_valid
 ratio_test = args.ratio_test
+
 
 def save_coco(file, info, licenses, images, annotations, categories):
     with open(file, 'wt', encoding='UTF-8') as coco:
@@ -39,28 +45,69 @@ def main(args):
         annotations = coco['annotations']
         categories = coco['categories']
 
-        number_of_images = len(images)
-
         images_with_annotations = funcy.lmap(lambda a: int(a['image_id']), annotations)
 
         if args.annotations:
             images = funcy.lremove(lambda i: i['id'] not in images_with_annotations, images)
 
-        train_before, test = train_test_split(
-            images, test_size=ratio_test)
+            
+        # x: train, y: valid z: test
+        if args.no_test:
+            x, y = train_test_split(
+            images, test_size=ratio_valid)
 
-        ratio_remaining = 1 - ratio_test
-        ratio_valid_adjusted = ratio_valid / ratio_remaining
+        else:
+            xy, z = train_test_split(
+                images, test_size=ratio_test)
 
-        train_after, valid = train_test_split(
-            train_before, test_size=ratio_valid_adjusted)
+            ratio_remaining = 1 - ratio_valid
+            ratio_valid_adjusted = ratio_valid / ratio_remaining
 
-        save_coco(args.trainJson_name, info, licenses, train_after, filter_annotations(annotations, train_after), categories)
-        save_coco(args.testJson_name, info, licenses, test, filter_annotations(annotations, test), categories)
-        save_coco(args.validJson_name, info, licenses, valid, filter_annotations(annotations, valid), categories)
 
-        print("Saved {} entries in {} and {} in {} and {} in {}".format(len(train_after), args.trainJson_name, len(test), args.testJson_name, len(valid), args.validJson_name))
+            x, y = train_test_split(
+                xy, test_size=ratio_valid_adjusted)
+        
+        if not os.path.exists(args.save_path):
+            os.mkdir(args.save_path)
+        
+        train_path = os.path.join(args.save_path, 'train')
+        train_image_path = os.path.join(train_path, 'images')
+        valid_path = os.path.join(args.save_path, 'val')
+        valid_image_path = os.path.join(valid_path, 'images')
+        test_path = os.path.join(args.save_path, 'test')
+        test_image_path = os.path.join(test_path, 'images')
+
+        for pp in [train_path, valid_path, test_path]:
+            if not os.path.exists(pp):
+                os.mkdir(pp)
+            if not os.path.exists(os.path.join(pp, 'images')):
+                os.mkdir(os.path.join(pp, 'images'))
+        
+        copy_cmd = 'cp'
+        if args.os == 'window':
+            copy_cmd = 'copy'
+
+        for train_image in x:
+            fname = train_image['file_name']
+            os.system(f'{copy_cmd} "{os.path.join(args.image_path, fname)}" "{os.path.join(train_image_path, fname)}"')
+        print(f'Complete {len(x)} train images')
+        for valid_image in y:
+            fname = valid_image['file_name']
+            os.system(f'{copy_cmd} "{os.path.join(args.image_path, fname)}" "{os.path.join(valid_image_path, fname)}"')
+        print(f'Complete {len(y)} valid images')
+
+        if not args.no_test:
+            for test_image in z:
+                fname = test_image['file_name']
+                os.system(f'{copy_cmd} "{os.path.join(args.image_path, fname)}" "{os.path.join(test_image_path, fname)}"')
+            print(f'Complete {len(z)} test images')
+
+        if not args.no_test:
+            print("Saved {} entries in {}, {} in {}, and {} in {}".format(len(x), train_path, len(y), valid_path, len(z), test_path))
+        else:
+            print("Saved {} entries in {}, and {} in {}".format(len(x), train_path, len(y), valid_path))
 
 
 if __name__ == "__main__":
     main(args)
+

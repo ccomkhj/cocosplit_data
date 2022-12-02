@@ -3,12 +3,8 @@
 https://github.com/akarazniewicz/cocosplit / akarazniewicz 
 (coco, train, test split)
 
-- In the existing code, just edit parser, save line and add ratio calculate code
+- In the existing code, fix error (confusion between valiation and test dataset) and update no test mode (only split into train and validation dataset).
 
-
-# cocosplit_train_test_valid
-If you want to separate the [train, test] sets, use the base code,
-and you want to separate the [train, valid, test] sets, use this code.
 
 ## init enviornment
 pip install -r requirements.txt
@@ -27,6 +23,7 @@ python cocosplit_train_test_valid.py \\
 --save_path {choose utput path, Has a default} \\  
 --image_path {choose coco dataset image files path, Has a default} \\  
 --os {choose your computer operating system, default linux}  
+--no_test
 ```
 
 ## example
@@ -43,6 +40,21 @@ python cocosplit_train_test_valid.py \\
 --image_path ./cocoDataset/image \\  
 --os window  
 ```
+
+```bash
+python cocosplit_train_test_valid.py \\  
+--annotations ./target.json \\  // input your target json file path  
+--train_ratio 0.9 \\  
+--valid_ratio 0.1 \\  
+--trainJson_name train.json \\  
+--validJson_name valid.json \\  
+--testJson_name test.json \\  
+--save_path /output \\  
+--image_path ./cocoDataset/image \\  
+--os window  
+--no_test
+```
+
 
 ## what is 'cocosplit_train_test_valid.py' and 'cocosplit_train_test_valid_fileVer.py'
 'cocosplit_train_test_valid.py' version is just split json file to train, test, valid file  
